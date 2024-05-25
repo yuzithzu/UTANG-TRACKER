@@ -43,8 +43,7 @@
     }
     .scrollable-table {
         max-height: 150px;
-        overflow-y: auto;
-        display: block;
+        overflow: auto;
     }
     .scrollable-table table {
         border-collapse: collapse;
@@ -102,6 +101,9 @@
     .red-row {
         background-color: red;
         color: white;
+    }
+    .highlight-row {
+        background-color: yellow;
     }
 </style>
 </head>
@@ -222,7 +224,7 @@
         tbody.innerHTML = "";
         utangList.forEach((utang, index) => {
             var rowClass = utang.balance === 0 ? 'class="red-row"' : '';
-            var row = `<tr ${rowClass}>
+            var row = `<tr ${rowClass} onclick='highlightRow(this)'>
                 <td>${utang.name}</td>
                 <td>${utang.loanDate}</td>
                 <td>${formatCurrency(utang.initialLoan)}</td>
@@ -240,13 +242,21 @@
         });
     }
 
+    function highlightRow(row) {
+        var rows = row.parentNode.children;
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].classList.remove('highlight-row');
+        }
+        row.classList.add('highlight-row');
+    }
+
     function submitPayment(index, button) {
         var row = button.parentNode.parentNode;
         var paymentInput = row.querySelector(".payment");
         var payment = parseFloat(paymentInput.value);
         var date = row.querySelector(".date").value;
         if (isNaN(payment) || payment <= 0 || date === "") {
-            alert("Please enter a valid payment and date.");
+            alert("Please enter valid payment and date.");
             return;
         }
         if (payment > utangList[index].balance) {
