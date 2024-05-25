@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utang Tracker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .filter {
+        width: calc(100% - 20px);
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .filter:focus {
+        border-color: dodgerblue;
+        outline: none;
+    }
+    #summary, #utangListDiv, #paymentHistory {
+        margin: 20px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .scrollable-table {
+        height: 150px;
+        overflow-y: scroll;
+        display: block;
+    }
+    .scrollable-table table {
+        border-collapse: collapse;
+        width: 100%;
+        display: table;
+    }
+</style>
+</head>
+<body>
+
+<h2>Utang Tracker</h2>
+
+<form id="utangForm">
+    <label for="name">Name ng Umutang:</label><br>
+    <input type="text" id="name" name="name"><br>
+    <label for="initialLoan">Initial Loan:</label><br>
+    <input type="number" id="initialLoan" name="initialLoan" step="0.01"><br>
+    <label for="loanDate">Loan Date:</label><br>
+    <input type="date" id="loanDate" name="loanDate"><br><br>
+    <button type="button" onclick="addUtang()">Enter</button>
+</form>
+
+<div id="summary">
+    <h3>Summary</h3>
+    <input type="date" id="filterDate" class="filter" placeholder="Filter by date" onchange="updateSummary()">
+    <button onclick="clearSummary()">Clear Filter</button>
+    <button onclick="resetAllRecords()">Reset All Records</button>
+    <div class="scrollable-table">
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th>Total Investment</th>
+                    <th>Total Interest</th>
+                    <th>Total Payment</th>
+                    <th>Total Balance</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="utangListDiv">
+    <h3>Utang List</h3>
+    <input type="text" id="filterUtang" class="filter" placeholder="Filter by name" onkeyup="filterTable('utangList', this.value)">
+    <div class="scrollable-table">
+        <table id="utangList">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Loan Date</th>
+                    <th>Initial Loan</th>
+                    <th>Interest (20%)</th>
+                    <th>Total Loan</th>
+                    <th>Payment</th>
+                    <th>Date</th>
+                    <th>Balance</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="paymentHistory">
+    <h3>Payment History</h3>
+    <input type="text" id="filterPaymentHistory" class="filter" placeholder="Filter by name" onkeyup="filterTable('paymentHistoryTable', this.value)">
+    <div class="scrollable-table">
+        <table id="paymentHistoryTable">
+            <thead>
+                <tr>
+                    <th>Name ng Umutang</th>
+                    <th>Amount Paid</th>
+                    <th>Date Paid</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="paymentHistoryBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    var utangList = JSON.parse(localStorage.getItem("utangList")) || [];
+    var paymentHistory = JSON.parse(localStorage.getItem("paymentHistory")) || [];
+
+    function saveData() {
+        localStorage.setItem("utangList", JSON.stringify(utangList));
+        localStorage.setItem("paymentHistory", JSON.stringify(paymentHistory));
+    }
+
+    function addUtang() {
+        var name = document.getElementById("name").value;
+        var initialLoan = parseFloat(document.getElementById("initialLoan").value);
+        var loanDate = document.getElementById("loanDate").value;
+        if (name === "" || isNaN(initialLoan) || initialLoan <= 0 || loanDate === "") {
+            alert("Please enter valid data.");
+            return;
+        }
+        var interest = initialLoan * 0.2;
+        var totalLoan = initialLoan + interest;
+        var balance = totalLoan;
+        var newRow = { name, loanDate, initialLoan, interest, totalLoan, balance, payments: [] };
+        utangList.push(newRow);
+        saveData();
+        renderUtangList();
+        updateSummary();
+        document.getElementById("name").value = "";
+        document.getElementById("initialLoan").value = "";
+        document.getElementById("loanDate").value = "";
+    }
+
+    function renderUtangList() {
+        var tbody = document.getElementById("utangList").getElementsByTagName('tbody')[0];
+        tbody.innerHTML = "";
+        utangList.forEach((utang, index) => {
+            var row = `<tr>
+                <td>${utang.name}</td>
+                <td>${utang.loanDate}</td>
+                <td>${utang.initialLoan.toFixed(2)}</td>
+                <td>${utang.interest.toFixed(2)}</td>
+                <td>${utang.totalLoan.toFixed(2)}</td>
+                <td><input type='number' class='payment' step='0.01'></td>
+                <td><input type='date' class='date'></td>
+                <td class='balance'>${utang.balance.toFixed(2)}</td>
+                <td>
+                    <button onclick='submitPayment(${index}, this)'>Submit Payment</button>
+                    <button onclick='deleteUtang(${index})'>Delete Utang</button>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function submitPayment(index, button) {
+        var row = button.parentNode.parentNode;
+        var paymentInput = row.querySelector(".payment");
+        var payment = parseFloat(paymentInput.value);
+        var date = row.querySelector(".date").value;
+        if (isNaN(payment) || payment <= 0 || date === "") {
+            alert("Please enter a valid payment and date.");
+            return;
+        }
+        var utang = utangList[index];
+        if (payment > utang.balance) {
+            alert("Payment exceeds remaining balance.");
+            return;
+        }
+        utang.balance -= payment;
+        utang.payments.push({ amount: payment, date });
+        paymentHistory.push({ name: utang.name, amount: payment, date });
+        saveData();
+        renderPaymentHistory();
+        renderUtangList();
+        updateSummary();
+    }
+
+    function deleteUtang(index) {
+        if (confirm("Are you sure you want to delete this utang?")) {
+            utangList.splice(index, 1);
+            saveData();
+            renderUtangList();
+            updateSummary();
+        }
+    }
+
+    function renderPaymentHistory() {
+        var tbody = document.getElementById("paymentHistoryBody");
+        tbody.innerHTML = "";
+        paymentHistory.forEach((payment, index) => {
+            var row = `<tr>
+                <td>${payment.name}</td>
+                <td>${payment.amount.toFixed(2)}</td>
+                <td>${payment.date}</td>
+                <td><button onclick='deletePayment(${index})'>Delete</button></td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function deletePayment(index) {
+        var payment = paymentHistory[index];
+        var utangIndex = utangList.findIndex(utang => utang.name === payment.name);
+        var utang = utangList[utangIndex];
+        utang.balance += payment.amount;
+        utang.payments = utang.payments.filter(p => !(p.amount === payment.amount && p.date === payment.date));
+        paymentHistory.splice(index, 1);
+        saveData();
+        renderPaymentHistory();
+        renderUtangList();
+        updateSummary();
+    }
+
+    function clearSummary() {
+        document.getElementById("filterDate").value = "";
+        updateSummary();
+    }
+
+    function resetAllRecords() {
+        if (confirm("Are you sure you want to reset all records? This action cannot be undone.")) {
+            utangList = [];
+            paymentHistory = [];
+            saveData();
+            renderUtangList();
+            renderPaymentHistory();
+            updateSummary();
+        }
+    }
+
+    function updateSummary() {
+        var totalInvestment = utangList.reduce((sum, utang) => sum + utang.initialLoan, 0);
+        var totalInterest = utangList.reduce((sum, utang) => sum + utang.interest, 0);
+        var filterDate = document.getElementById("filterDate").value;
+        var totalPayment = 0;
+        var totalBalance = 0;
+
+        paymentHistory.forEach(payment => {
+            if (!filterDate || payment.date === filterDate) {
+                totalPayment += payment.amount;
+            }
+        });
+
+        utangList.forEach(utang => {
+            if (!filterDate) {
+                totalBalance += utang.balance;
+            } else {
+                var paymentsOnDate = utang.payments.filter(payment => payment.date === filterDate);
+                var totalPaymentsOnDate = paymentsOnDate.reduce((sum, payment) => sum + payment.amount, 0);
+                totalBalance += (utang.totalLoan - totalPaymentsOnDate);
+            }
+        });
+
+        var summaryRow = `<tr>
+            <td>${totalInvestment.toFixed(2)}</td>
+            <td>${totalInterest.toFixed(2)}</td>
+            <td>${totalPayment.toFixed(2)}</td>
+            <td>${totalBalance.toFixed(2)}</td>
+            <td>${filterDate || "All Dates"}</td>
+        </tr>`;
+        document.getElementById("summaryBody").innerHTML = summaryRow;
+    }
+
+    function filterTable(tableId, filterValue) {
+        var table, tr, td, i, txtValue;
+        table = document.getElementById(tableId);
+        tr = table.getElementsByTagName("tr");
+        for (i = 1; i < tr.length; i++) {
+            tr[i].style.display = "none";
+            td = tr[i].getElementsByTagName("td");
+            for (var j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toLowerCase().indexOf(filterValue.toLowerCase()) > -1) {
+                        tr[i].style.display = "";
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    window.onload = function() {
+        renderUtangList();
+        renderPaymentHistory();
+        updateSummary();
+    }
+</script>
+
+</body>
+</html>
