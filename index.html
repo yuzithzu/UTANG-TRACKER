@@ -181,6 +181,10 @@
         localStorage.setItem("paymentHistory", JSON.stringify(paymentHistory));
     }
 
+    function formatCurrency(number) {
+        return number.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+    }
+
     function addUtang() {
         var name = document.getElementById("name").value;
         var initialLoan = parseFloat(document.getElementById("initialLoan").value);
@@ -209,12 +213,12 @@
             var row = `<tr>
                 <td>${utang.name}</td>
                 <td>${utang.loanDate}</td>
-                <td>${utang.initialLoan.toFixed(2)}</td>
-                <td>${utang.interest.toFixed(2)}</td>
-                <td>${utang.totalLoan.toFixed(2)}</td>
+                <td>${formatCurrency(utang.initialLoan)}</td>
+                <td>${formatCurrency(utang.interest)}</td>
+                <td>${formatCurrency(utang.totalLoan)}</td>
                 <td><input type='number' class='payment' step='0.01'></td>
                 <td><input type='date' class='date'></td>
-                <td class='balance'>${utang.balance.toFixed(2)}</td>
+                <td class='balance'>${formatCurrency(utang.balance)}</td>
                 <td>
                     <button onclick='submitPayment(${index}, this)'>Submit Payment</button>
                     <button onclick='deleteUtang(${index})'>Delete Utang</button>
@@ -262,7 +266,7 @@
         paymentHistory.forEach((payment, index) => {
             var row = `<tr>
                 <td>${payment.name}</td>
-                <td>${payment.amount.toFixed(2)}</td>
+                <td>${formatCurrency(payment.amount)}</td>
                 <td>${payment.date}</td>
                 <td><button onclick='deletePayment(${index})'>Delete Payment</button></td>
             </tr>`;
@@ -310,10 +314,10 @@
         });
 
         var summaryRow = `<tr>
-            <td>${totalInvestment.toFixed(2)}</td>
-            <td>${totalInterest.toFixed(2)}</td>
-            <td>${totalPayment.toFixed(2)}</td>
-            <td>${totalBalance.toFixed(2)}</td>
+            <td>${formatCurrency(totalInvestment)}</td>
+            <td>${formatCurrency(totalInterest)}</td>
+            <td>${formatCurrency(totalPayment)}</td>
+            <td>${formatCurrency(totalBalance)}</td>
             <td>${filterDate || "All Dates"}</td>
         </tr>`;
         document.getElementById("summaryBody").innerHTML = summaryRow;
