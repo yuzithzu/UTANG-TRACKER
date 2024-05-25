@@ -18,14 +18,16 @@
     th, td {
         border: 1px solid #dddddd;
         text-align: left;
-        padding: 8px;
+        padding: 4px; /* Reduced padding */
+        font-size: 12px; /* Reduced font size */
     }
     th {
         background-color: #f2f2f2;
+        white-space: nowrap; /* Prevent wrapping */
     }
     .filter {
         width: calc(100% - 20px);
-        padding: 8px;
+        padding: 4px; /* Reduced padding */
         margin-bottom: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
@@ -68,6 +70,10 @@
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 16px; /* Prevent zoom on mobile */
+    }
+    input:focus {
+        border-color: dodgerblue;
+        outline: none;
     }
     button {
         display: inline-block;
@@ -251,7 +257,7 @@
     }
 
     function submitPayment(index, button) {
-        var row = button.parentNode.parentNode;
+        var row = button.parentElement.parentElement;
         var paymentInput = row.querySelector(".payment");
         var payment = parseFloat(paymentInput.value);
         var date = row.querySelector(".date").value;
