@@ -92,6 +92,15 @@
             margin: 10px;
         }
     }
+    @media (max-width: 768px) {
+        .container {
+            display: block;
+        }
+    }
+    .red-row {
+        background-color: red;
+        color: white;
+    }
 </style>
 </head>
 <body>
@@ -210,7 +219,8 @@
         var tbody = document.getElementById("utangList").getElementsByTagName('tbody')[0];
         tbody.innerHTML = "";
         utangList.forEach((utang, index) => {
-            var row = `<tr>
+            var rowClass = utang.balance === 0 ? 'class="red-row"' : '';
+            var row = `<tr ${rowClass}>
                 <td>${utang.name}</td>
                 <td>${utang.loanDate}</td>
                 <td>${formatCurrency(utang.initialLoan)}</td>
@@ -246,8 +256,8 @@
         utang.payments.push({ amount: payment, date });
         paymentHistory.push({ name: utang.name, amount: payment, date });
         saveData();
-        renderPaymentHistory();
         renderUtangList();
+        renderPaymentHistory();
         updateSummary();
     }
 
