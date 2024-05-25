@@ -10,31 +10,63 @@
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        background-color: #f8f9fa;
     }
-    h2 {
-        text-align: center;
-        margin: 20px 0;
-        font-size: 24px;
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
-    form, .container {
-        width: 90%;
-        margin: 0 auto;
-        max-width: 600px;
-        background-color: white;
-        padding: 20px;
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px; /* Reduced padding */
+        font-size: 12px; /* Reduced font size */
+    }
+    th {
+        background-color: #f2f2f2;
+        white-space: nowrap; /* Prevent wrapping */
+    }
+    .filter {
+        width: calc(100% - 20px);
+        padding: 4px; /* Reduced padding */
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px; /* Prevent zoom on mobile */
+        -webkit-user-select: none; /* Prevent text selection */
+        touch-action: manipulation; /* Prevent zoom */
+    }
+    .filter:focus {
+        border-color: dodgerblue;
+        outline: none;
+    }
+    #summary, #utangListDiv, #paymentHistory {
+        margin: 20px 10px;
+        padding: 10px;
         border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 5px;
+    }
+    .scrollable-table {
+        max-height: 150px;
+        overflow: auto;
+    }
+    .scrollable-table table {
+        border-collapse: collapse;
+        width: 100%;
+        display: table;
+    }
+    form {
+        margin: 20px 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
     }
     label {
         display: block;
         margin-top: 10px;
-        font-size: 14px;
     }
-    input[type="text"], input[type="number"], input[type="date"], .filter {
+    input[type="text"], input[type="number"], input[type="date"] {
         width: calc(100% - 22px);
-        padding: 10px;
+        padding: 8px;
         margin-top: 5px;
         margin-bottom: 10px;
         border: 1px solid #ccc;
@@ -43,38 +75,38 @@
         -webkit-user-select: none; /* Prevent text selection */
         touch-action: manipulation; /* Prevent zoom */
     }
+    input:focus {
+        border-color: dodgerblue;
+        outline: none;
+    }
     button {
         display: inline-block;
-        width: 100%;
-        padding: 10px;
+        padding: 10px 20px;
         margin-top: 10px;
         border: none;
         background-color: dodgerblue;
         color: white;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 16px;
     }
     button:hover {
         background-color: deepskyblue;
     }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
+    @media (min-width: 768px) {
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .container > div {
+            flex: 1 1 calc(50% - 20px);
+            margin: 10px;
+        }
     }
-    th, td {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-        font-size: 12px;
-    }
-    th {
-        background-color: #f2f2f2;
-    }
-    .scrollable-table {
-        max-height: 150px;
-        overflow: auto;
+    @media (max-width: 768px) {
+        .container {
+            display: block;
+        }
     }
     .red-row {
         background-color: red;
@@ -83,65 +115,28 @@
     .highlight-row {
         background-color: yellow;
     }
-    @media (max-width: 600px) {
-        body {
-            font-size: 14px;
-        }
-        form, .container {
-            padding: 15px;
-        }
-        label {
-            font-size: 12px;
-        }
-        button {
-            padding: 8px;
-            font-size: 14px;
-        }
-        th, td {
-            padding: 6px;
-        }
-        .summary-actions {
-            display: flex;
-            flex-direction: column;
-        }
-        .summary-actions button, .summary-actions input {
-            width: 100%;
-            margin-top: 5px;
-        }
-    }
-    @media (min-width: 601px) {
-        .summary-actions {
-            display: flex;
-            justify-content: space-between;
-        }
-        .summary-actions button, .summary-actions input {
-            width: auto;
-        }
-    }
 </style>
 </head>
 <body>
 
-<h2>Utang Tracker</h2>
-
-<form id="utangForm">
-    <label for="name">Name ng Umutang:</label>
-    <input type="text" id="name" name="name">
-    <label for="initialLoan">Initial Loan:</label>
-    <input type="number" id="initialLoan" name="initialLoan" step="0.01">
-    <label for="loanDate">Loan Date:</label>
-    <input type="date" id="loanDate" name="loanDate">
-    <button type="button" onclick="addUtang()">Enter</button>
-</form>
+<h2 style="text-align:center;">Utang Tracker</h2>
 
 <div class="container">
+    <form id="utangForm">
+        <label for="name">Name ng Umutang:</label>
+        <input type="text" id="name" name="name">
+        <label for="initialLoan">Initial Loan:</label>
+        <input type="number" id="initialLoan" name="initialLoan" step="0.01">
+        <label for="loanDate">Loan Date:</label>
+        <input type="date" id="loanDate" name="loanDate">
+        <button type="button" onclick="addUtang()">Enter</button>
+    </form>
+
     <div id="summary">
         <h3>Summary</h3>
-        <div class="summary-actions">
-            <input type="date" id="filterDate" class="filter" placeholder="Filter by date" onchange="updateSummary()">
-            <button onclick="clearSummary()">Clear Filter</button>
-            <button onclick="resetAllRecords()">Reset All Records</button>
-        </div>
+        <input type="date" id="filterDate" class="filter" placeholder="Filter by date" onchange="updateSummary()">
+        <button onclick="clearSummary()">Clear Filter</button>
+        <button onclick="resetAllRecords()">Reset All Records</button>
         <div class="scrollable-table">
             <table id="summaryTable">
                 <thead>
@@ -260,16 +255,16 @@
     function highlightRow(row) {
         var rows = row.parentElement.getElementsByTagName("tr");
         for (var i = 0; i < rows.length; i++) {
-            rows[i].classList.remove("highlight-row");
+            rows[i].classList.remove('highlight-row');
         }
-        row.classList.add("highlight-row");
+        row.classList.add('highlight-row');
     }
 
     function submitPayment(index, button) {
-        var paymentInput = button.parentElement.parentElement.querySelector('.payment');
-        var dateInput = button.parentElement.parentElement.querySelector('.date');
+        var row = button.parentElement.parentElement;
+        var paymentInput = row.querySelector(".payment");
         var payment = parseFloat(paymentInput.value);
-        var date = dateInput.value;
+        var date = row.querySelector(".date").value;
         if (isNaN(payment) || payment <= 0 || date === "") {
             alert("Please enter valid payment and date.");
             return;
