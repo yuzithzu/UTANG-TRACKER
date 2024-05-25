@@ -32,6 +32,8 @@
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 16px; /* Prevent zoom on mobile */
+        -webkit-user-select: none; /* Prevent text selection */
+        touch-action: manipulation; /* Prevent zoom */
     }
     .filter:focus {
         border-color: dodgerblue;
@@ -70,6 +72,8 @@
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 16px; /* Prevent zoom on mobile */
+        -webkit-user-select: none; /* Prevent text selection */
+        touch-action: manipulation; /* Prevent zoom */
     }
     input:focus {
         border-color: dodgerblue;
@@ -249,7 +253,7 @@
     }
 
     function highlightRow(row) {
-        var rows = row.parentNode.children;
+        var rows = row.parentElement.getElementsByTagName("tr");
         for (var i = 0; i < rows.length; i++) {
             rows[i].classList.remove('highlight-row');
         }
