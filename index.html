@@ -10,6 +10,11 @@
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+        background-color: #f8f9fa;
+    }
+    h2, h3 {
+        text-align: center;
+        color: #343a40;
     }
     table {
         width: 100%;
@@ -18,22 +23,22 @@
     th, td {
         border: 1px solid #dddddd;
         text-align: left;
-        padding: 4px; /* Reduced padding */
-        font-size: 12px; /* Reduced font size */
+        padding: 8px;
+        font-size: 12px;
     }
     th {
-        background-color: #f2f2f2;
-        white-space: nowrap; /* Prevent wrapping */
+        background-color: #6c757d;
+        color: white;
     }
     .filter {
         width: calc(100% - 20px);
-        padding: 4px; /* Reduced padding */
+        padding: 8px;
         margin-bottom: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
-        font-size: 16px; /* Prevent zoom on mobile */
-        -webkit-user-select: none; /* Prevent text selection */
-        touch-action: manipulation; /* Prevent zoom */
+        font-size: 16px;
+        -webkit-user-select: none;
+        touch-action: manipulation;
     }
     .filter:focus {
         border-color: dodgerblue;
@@ -44,6 +49,8 @@
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 5px;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .scrollable-table {
         max-height: 150px;
@@ -59,10 +66,14 @@
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 5px;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     label {
         display: block;
         margin-top: 10px;
+        font-weight: bold;
+        color: #495057;
     }
     input[type="text"], input[type="number"], input[type="date"] {
         width: calc(100% - 22px);
@@ -71,9 +82,9 @@
         margin-bottom: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
-        font-size: 16px; /* Prevent zoom on mobile */
-        -webkit-user-select: none; /* Prevent text selection */
-        touch-action: manipulation; /* Prevent zoom */
+        font-size: 16px;
+        -webkit-user-select: none;
+        touch-action: manipulation;
     }
     input:focus {
         border-color: dodgerblue;
@@ -83,6 +94,7 @@
         display: inline-block;
         padding: 10px 20px;
         margin-top: 10px;
+        margin-right: 5px;
         border: none;
         background-color: dodgerblue;
         color: white;
@@ -98,7 +110,7 @@
             justify-content: space-between;
             flex-wrap: wrap;
         }
-        .container > div {
+        .container > div, form {
             flex: 1 1 calc(50% - 20px);
             margin: 10px;
         }
@@ -108,18 +120,29 @@
             display: block;
         }
     }
-    .red-row {
-        background-color: red;
-        color: white;
+    .blue-row {
+        background-color: #cce5ff;
+        color: black;
     }
     .highlight-row {
-        background-color: yellow;
+        background-color: #e6f7ff;
+    }
+    .balance-cell {
+        background-color: #ffc107;
+        font-weight: bold;
+    }
+    .summary-table th {
+        background-color: #007bff;
+        color: white;
+    }
+    .summary-table td {
+        background-color: #e9ecef;
     }
 </style>
 </head>
 <body>
 
-<h2 style="text-align:center;">Utang Tracker</h2>
+<h2>Utang Tracker</h2>
 
 <div class="container">
     <form id="utangForm">
@@ -138,7 +161,7 @@
         <button onclick="clearSummary()">Clear Filter</button>
         <button onclick="resetAllRecords()">Reset All Records</button>
         <div class="scrollable-table">
-            <table id="summaryTable">
+            <table id="summaryTable" class="summary-table">
                 <thead>
                     <tr>
                         <th>Total Investment</th>
@@ -233,20 +256,17 @@
         var tbody = document.getElementById("utangList").getElementsByTagName('tbody')[0];
         tbody.innerHTML = "";
         utangList.forEach((utang, index) => {
-            var rowClass = utang.balance === 0 ? 'class="red-row"' : '';
+            var rowClass = utang.balance === 0 ? 'class="blue-row"' : '';
             var row = `<tr ${rowClass} onclick='highlightRow(this)'>
                 <td>${utang.name}</td>
                 <td>${utang.loanDate}</td>
                 <td>${formatCurrency(utang.initialLoan)}</td>
                 <td>${formatCurrency(utang.interest)}</td>
                 <td>${formatCurrency(utang.totalLoan)}</td>
-                <td><input type='number' class='payment' step='0.01'></td>
+                <td><input type='number' class='payment' min='0' step='0.01'></td>
                 <td><input type='date' class='date'></td>
-                <td class='balance'>${formatCurrency(utang.balance)}</td>
-                <td>
-                    <button onclick='submitPayment(${index}, this)'>Submit Payment</button>
-                    <button onclick='deleteUtang(${index})'>Delete Utang</button>
-                </td>
+                <td class="balance-cell">${formatCurrency(utang.balance)}</td>
+                <td><button onclick='submitPayment(${index}, this)'>Submit</button><button onclick='deleteUtang(${index})'>Delete</button></td>
             </tr>`;
             tbody.innerHTML += row;
         });
@@ -299,7 +319,7 @@
                 <td>${payment.name}</td>
                 <td>${formatCurrency(payment.amount)}</td>
                 <td>${payment.date}</td>
-                <td><button onclick='deletePayment(${index})'>Delete Payment</button></td>
+                <td><button onclick='deletePayment(${index})'>Delete</button></td>
             </tr>`;
             tbody.innerHTML += row;
         });
@@ -335,13 +355,7 @@
         });
 
         utangList.forEach(utang => {
-            if (!filterDate) {
-                totalBalance += utang.balance;
-            } else {
-                var paymentsOnDate = utang.payments.filter(payment => payment.date === filterDate);
-                var totalPaymentsOnDate = paymentsOnDate.reduce((sum, payment) => sum + payment.amount, 0);
-                totalBalance += (utang.totalLoan - totalPaymentsOnDate);
-            }
+            totalBalance += utang.balance;
         });
 
         var summaryRow = `<tr>
