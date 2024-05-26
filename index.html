@@ -27,7 +27,7 @@
         font-size: 12px;
     }
     th {
-        background-color: #6c757d;
+        background-color: #333;
         color: white;
     }
     .filter {
@@ -75,7 +75,7 @@
         font-weight: bold;
         color: #495057;
     }
-    input[type="text"], input[type="number"], input[type="date"] {
+    input[type="text"], input[type="number"], input[type="date"], select {
         width: calc(100% - 22px);
         padding: 8px;
         margin-top: 5px;
@@ -86,7 +86,7 @@
         -webkit-user-select: none;
         touch-action: manipulation;
     }
-    input:focus {
+    input:focus, select:focus {
         border-color: dodgerblue;
         outline: none;
     }
@@ -96,13 +96,13 @@
         margin-top: 10px;
         margin-right: 5px;
         border: none;
-        background-color: dodgerblue;
+        background-color: #333;
         color: white;
         border-radius: 4px;
         cursor: pointer;
     }
     button:hover {
-        background-color: deepskyblue;
+        background-color: #555;
     }
     @media (min-width: 768px) {
         .container {
@@ -128,23 +128,23 @@
             margin: 10px;
         }
     }
-    .blue-row {
-        background-color: #cce5ff;
+    .yellow-row {
+        background-color: #ffeb3b;
         color: black;
     }
     .highlight-row {
-        background-color: #e6f7ff;
+        background-color: #b3e5fc;
     }
     .balance-cell {
         background-color: #ffc107;
         font-weight: bold;
     }
     .summary-table th {
-        background-color: #007bff;
+        background-color: #333;
         color: white;
     }
     .summary-table td {
-        background-color: #e9ecef;
+        background-color: #f8f9fa;
     }
 </style>
 </head>
@@ -211,11 +211,17 @@
 
     <div class="bottom" id="paymentHistory">
         <h3>Payment History</h3>
-        <input type="text" id="filterPaymentHistory" class="filter" placeholder="Filter by name" onkeyup="filterTable('paymentHistoryTable', this.value)">
+        <select id="filterPaymentHistory" class="filter" onchange="filterPaymentHistoryByName()">
+            <option value="">Select name</option>
+        </select>
+        <button onclick="selectAllPayments()">Select All</button>
+        <button onclick="unselectAllPayments()">Unselect All</button>
+        <button onclick="showSelectedPayments()">Show Selected</button>
         <div class="scrollable-table">
             <table id="paymentHistoryTable">
                 <thead>
                     <tr>
+                        <th>Select</th>
                         <th>Name ng Umutang</th>
                         <th>Amount Paid</th>
                         <th>Date Paid</th>
@@ -224,6 +230,21 @@
                 </thead>
                 <tbody id="paymentHistoryBody"></tbody>
             </table>
+        </div>
+        <div id="selectedPayments" style="margin-top: 20px;">
+            <h3>Selected Payments</h3>
+            <div class="scrollable-table">
+                <table id="selectedPaymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Name ng Umutang</th>
+                            <th>Amount Paid</th>
+                            <th>Date Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectedPaymentsBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -246,14 +267,21 @@
         var initialLoan = parseFloat(document.getElementById("initialLoan").value);
         var loanDate = document.getElementById("loanDate").value;
         if (name === "" || isNaN(initialLoan) || initialLoan <= 0 || loanDate === "") {
-            alert("Please enter valid data.");
+            alert("Please enter valid details.");
             return;
         }
-        var interest = initialLoan * 0.2;
+        var interest = initialLoan * 0.20;
         var totalLoan = initialLoan + interest;
-        var balance = totalLoan;
-        var newRow = { name, loanDate, initialLoan, interest, totalLoan, balance, payments: [] };
-        utangList.push(newRow);
+        var newUtang = {
+            name: name,
+            initialLoan: initialLoan,
+            interest: interest,
+            totalLoan: totalLoan,
+            balance: totalLoan,
+            payments: [],
+            loanDate: loanDate
+        };
+        utangList.push(newUtang);
         saveData();
         renderUtangList();
         updateSummary();
@@ -266,7 +294,7 @@
         var tbody = document.querySelector("#utangList tbody");
         tbody.innerHTML = "";
         utangList.forEach((utang, index) => {
-            var rowClass = utang.balance === 0 ? "blue-row" : "";
+            var rowClass = utang.balance === 0 ? "yellow-row" : "";
             var row = `<tr class="${rowClass}" onclick="highlightRow(this)">
                 <td>${utang.name}</td>
                 <td>${utang.loanDate}</td>
@@ -326,6 +354,7 @@
         tbody.innerHTML = "";
         paymentHistory.forEach((payment, index) => {
             var row = `<tr>
+                <td><input type="checkbox" class="select-payment"></td>
                 <td>${payment.name}</td>
                 <td>${formatCurrency(payment.amount)}</td>
                 <td>${payment.date}</td>
@@ -333,6 +362,7 @@
             </tr>`;
             tbody.innerHTML += row;
         });
+        populateFilterPaymentHistory();
     }
 
     function deletePayment(index) {
@@ -411,6 +441,72 @@
             renderPaymentHistory();
             updateSummary();
         }
+    }
+
+    function selectAllPayments() {
+        var checkboxes = document.querySelectorAll(".select-payment");
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    }
+
+    function unselectAllPayments() {
+        var checkboxes = document.querySelectorAll(".select-payment");
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+
+    function showSelectedPayments() {
+        var selectedPaymentsDiv = document.getElementById("selectedPaymentsBody");
+        selectedPaymentsDiv.innerHTML = "";
+        var checkboxes = document.querySelectorAll(".select-payment:checked");
+        if (checkboxes.length === 0) {
+            selectedPaymentsDiv.innerHTML = "<tr><td colspan='3'>No selected payments</td></tr>";
+            return;
+        }
+        checkboxes.forEach(checkbox => {
+            var row = checkbox.parentElement.parentElement;
+            var name = row.cells[1].textContent;
+            var amount = row.cells[2].textContent;
+            var date = row.cells[3].textContent;
+            var newRow = `<tr>
+                <td>${name}</td>
+                <td>${amount}</td>
+                <td>${date}</td>
+            </tr>`;
+            selectedPaymentsDiv.innerHTML += newRow;
+        });
+    }
+
+    function filterPaymentHistoryByName() {
+        var selectElement = document.getElementById("filterPaymentHistory");
+        var selectedName = selectElement.value;
+        var tbody = document.getElementById("paymentHistoryBody");
+        var checkboxes = tbody.querySelectorAll(".select-payment");
+
+        checkboxes.forEach((checkbox, index) => {
+            var row = checkbox.parentElement.parentElement;
+            var name = row.cells[1].textContent;
+            if (selectedName === "" || name === selectedName) {
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+            }
+        });
+        showSelectedPayments();
+    }
+
+    function populateFilterPaymentHistory() {
+        var selectElement = document.getElementById("filterPaymentHistory");
+        selectElement.innerHTML = "<option value=''>Select name</option>";
+        var uniqueNames = [...new Set(paymentHistory.map(payment => payment.name))];
+        uniqueNames.forEach(name => {
+            var option = document.createElement("option");
+            option.value = name;
+            option.text = name;
+            selectElement.appendChild(option);
+        });
     }
 
     window.onload = function() {
