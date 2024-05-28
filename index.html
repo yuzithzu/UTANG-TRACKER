@@ -188,7 +188,7 @@
 
     <div class="bottom" id="utangListDiv">
         <h3>Utang List</h3>
-        <input type="text" id="filterUtang" class="filter" placeholder="Filter by name" onkeyup="filterUtangList()">
+        <input type="text" id="filterUtang" class="filter" placeholder="Filter by name" onkeyup="filterTable('utangList', this.value)">
         <div class="scrollable-table">
             <table id="utangList">
                 <thead>
@@ -211,10 +211,7 @@
 
     <div class="bottom" id="paymentHistory">
         <h3>Payment History</h3>
-        <input type="text" id="filterPaymentHistory" class="filter" placeholder="Filter by name" onkeyup="filterTable('paymentHistoryTable', this.value)">
-        <select id="selectName" class="filter" onchange="selectByName()">
-            <option value="">Select Name</option>
-        </select>
+        <input type="text" id="filterPaymentHistory" class="filter" placeholder="Search by name" onkeyup="searchPaymentsByName(this.value)">
         <button onclick="selectAllPayments()">Select All</button>
         <button onclick="unselectAllPayments()">Unselect All</button>
         <button onclick="showSelectedPayments()">Show Selected</button>
@@ -267,8 +264,8 @@
         var name = document.getElementById("name").value;
         var initialLoan = parseFloat(document.getElementById("initialLoan").value);
         var loanDate = document.getElementById("loanDate").value;
-        if (!name || isNaN(initialLoan) || !loanDate) {
-            alert("Please complete all fields.");
+        if (!name || isNaN(initialLoan) || initialLoan <= 0 || !loanDate) {
+            alert("Please enter valid name, loan amount, and loan date.");
             return;
         }
         var interest = initialLoan * 0.20;
@@ -286,7 +283,6 @@
         saveData();
         renderUtangList();
         updateSummary();
-        updateSelectOptions();
         document.getElementById("name").value = "";
         document.getElementById("initialLoan").value = "";
         document.getElementById("loanDate").value = "";
@@ -297,7 +293,8 @@
         tbody.innerHTML = "";
         utangList.forEach((utang, index) => {
             if (utang.balance > 0) {
-                var row = `<tr onclick="highlightRow(this)">
+                var rowClass = utang.balance === 0 ? "yellow-row" : "";
+                var row = `<tr class="${rowClass}" onclick="highlightRow(this)">
                     <td>${utang.name}</td>
                     <td>${utang.loanDate}</td>
                     <td>${formatCurrency(utang.initialLoan)}</td>
@@ -410,35 +407,39 @@
         document.getElementById("summaryBody").innerHTML = summaryRow;
     }
 
-    function filterUtangList() {
-        var filter = document.getElementById("filterUtang").value.toLowerCase();
-        var tbody = document.querySelector("#utangList tbody");
-        Array.from(tbody.getElementsByTagName("tr")).forEach(row => {
-            var name = row.cells[0].textContent.toLowerCase();
-            row.style.display = name.includes(filter) ? "" : "none";
-        });
+    function filterTable(tableId, filterValue) {
+        var table, tr, td, i, txtValue;
+        table = document.getElementById(tableId);
+        tr = table.getElementsByTagName("tr");
+        for (i = 1; i < tr.length; i++) {
+            tr[i].style.display = "none";
+            td = tr[i].getElementsByTagName("td");
+            for (var j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toLowerCase().indexOf(filterValue.toLowerCase()) > -1) {
+                        tr[i].style.display = "";
+                        break;
+                    }
+                }
+            }
+        }
     }
 
-    function selectByName() {
-        var name = document.getElementById("selectName").value;
-        var tbody = document.getElementById("paymentHistoryBody");
-        Array.from(tbody.getElementsByTagName("tr")).forEach(row => {
-            var rowName = row.cells[1].textContent;
-            row.querySelector(".select-payment").checked = rowName === name;
-        });
-        showSelectedPayments();
+    function clearSummary() {
+        document.getElementById("filterDate").value = "";
+        updateSummary();
     }
 
-    function updateSelectOptions() {
-        var select = document.getElementById("selectName");
-        select.innerHTML = "<option value=''>Select Name</option>";
-        var names = [...new Set(utangList.map(utang => utang.name))];
-        names.forEach(name => {
-            var option = document.createElement("option");
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
-        });
+    function resetAllRecords() {
+        if (confirm("Are you sure you want to reset all records? This action cannot be undone.")) {
+            localStorage.clear();
+            utangList = [];
+            paymentHistory = [];
+            renderUtangList();
+            renderPaymentHistory();
+            updateSummary();
+        }
     }
 
     function selectAllPayments() {
@@ -446,7 +447,6 @@
         checkboxes.forEach(checkbox => {
             checkbox.checked = true;
         });
-        showSelectedPayments();
     }
 
     function unselectAllPayments() {
@@ -454,7 +454,6 @@
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
         });
-        showSelectedPayments();
     }
 
     function showSelectedPayments() {
@@ -479,27 +478,24 @@
         });
     }
 
-    function clearSummary() {
-        document.getElementById("filterDate").value = "";
-        updateSummary();
-    }
-
-    function resetAllRecords() {
-        if (confirm("Are you sure you want to reset all records? This action cannot be undone.")) {
-            localStorage.clear();
-            utangList = [];
-            paymentHistory = [];
-            renderUtangList();
-            renderPaymentHistory();
-            updateSummary();
-        }
+    function searchPaymentsByName(name) {
+        var checkboxes = document.querySelectorAll(".select-payment");
+        checkboxes.forEach(checkbox => {
+            var row = checkbox.parentElement.parentElement;
+            var paymentName = row.cells[1].textContent.toLowerCase();
+            if (paymentName === name.toLowerCase()) {
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+            }
+        });
+        showSelectedPayments();
     }
 
     window.onload = function() {
         renderUtangList();
         renderPaymentHistory();
         updateSummary();
-        updateSelectOptions();
     }
 </script>
 
