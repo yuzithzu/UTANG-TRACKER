@@ -201,7 +201,8 @@
                         <th>Payment</th>
                         <th>Date</th>
                         <th>Balance</th>
-                        <th>Action</th>
+                        <th>Submit Payment</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -265,10 +266,10 @@
         var initialLoan = parseFloat(document.getElementById("initialLoan").value);
         var loanDate = document.getElementById("loanDate").value;
         if (!name || isNaN(initialLoan) || initialLoan <= 0 || !loanDate) {
-            alert("Please enter valid name, loan amount, and loan date.");
+            alert("Please provide valid inputs.");
             return;
         }
-        var interest = initialLoan * 0.20;
+        var interest = initialLoan * 0.2;
         var totalLoan = initialLoan + interest;
         var newUtang = {
             name: name,
@@ -303,7 +304,8 @@
                     <td><input type='number' class='payment' min='0' step='0.01'></td>
                     <td><input type='date' class='date'></td>
                     <td class="balance-cell">${formatCurrency(utang.balance)}</td>
-                    <td><button onclick='submitPayment(${index}, this)'>Submit</button><button onclick='deleteUtang(${index})'>Delete</button></td>
+                    <td><button onclick='submitPayment(${index}, this)'>Submit</button></td>
+                    <td><button onclick='deleteUtang(${index})'>Delete</button></td>
                 </tr>`;
                 tbody.innerHTML += row;
             }
