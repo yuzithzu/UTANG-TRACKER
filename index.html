@@ -136,7 +136,7 @@
         background-color: #b3e5fc;
     }
     .balance-cell {
-        background-color: #ffc107;
+        background-color: #transparent;
         font-weight: bold;
     }
     .summary-table th {
@@ -145,6 +145,16 @@
     }
     .summary-table td {
         background-color: #f8f9fa;
+    }
+    .initial-investment {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #ffc107;
+        color: #000;
+        font-weight: bold;
+        text-align: center;
     }
 </style>
 </head>
@@ -184,6 +194,7 @@
                 <tbody id="summaryBody"></tbody>
             </table>
         </div>
+        <div id="initialInvestment" class="initial-investment"></div>
     </div>
 
     <div class="bottom" id="utangListDiv">
@@ -407,6 +418,9 @@
             <td>${filterDate || "All Dates"}</td>
         </tr>`;
         document.getElementById("summaryBody").innerHTML = summaryRow;
+
+        var initialInvestment = totalBalance - totalInterest;
+        document.getElementById("initialInvestment").textContent = `Initial Investment: ${formatCurrency(initialInvestment)}`;
     }
 
     function filterTable(tableId, filterValue) {
