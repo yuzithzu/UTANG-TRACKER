@@ -507,7 +507,34 @@
         });
         showSelectedPayments();
     }
+        function renderUtangList() {
+        var tbody = document.querySelector("#utangList tbody");
+        tbody.innerHTML = "";
+        utangList.forEach((utang, index) => {
+            if (utang.balance > 0) {
+                var rowClass = utang.balance === 0 ? "yellow-row" : "";
+                // Bago na method para mag-apply ng color sa balanse
+                var balanceColor = utang.balance < 1000 ? "red" : "black";
+                var row = `<tr class="${rowClass}" onclick="highlightRow(this)">
+                    <td>${utang.name}</td>
+                    <td>${utang.loanDate}</td>
+                    <td>${formatCurrency(utang.initialLoan)}</td>
+                    <td>${formatCurrency(utang.interest)}</td>
+                    <td>${formatCurrency(utang.totalLoan)}</td>
+                    <td><input type='number' class='payment' min='0' step='0.01'></td>
+                    <td><input type='date' class='date'></td>
+                    <td class="balance-cell" style="color: ${balanceColor};">${formatCurrency(utang.balance)}</td>
+                    <td><button onclick='submitPayment(${index}, this)'>Submit</button></td>
+                    <td><button onclick='deleteUtang(${index})'>Delete</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        });
+    }
 
+    // Tungkol sa iba pang functions sa iyong code
+
+    // Window onload function
     window.onload = function() {
         renderUtangList();
         renderPaymentHistory();
