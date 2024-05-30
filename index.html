@@ -538,62 +538,81 @@ function downloadPDF() {
     var { jsPDF } = window.jspdf;
     var doc = new jsPDF();
 
-    // Columns for utang list
-    var utangColumns = ["Name", "Loan Date", "Initial Loan", "Interest", "Total Loan", "Balance"];
-
-    // Rows for utang list
-    var utangRows = utangList.map(utang => [
-        utang.name,
-        utang.loanDate,
-        utang.initialLoan.toFixed(2),
-        utang.interest.toFixed(2),
-        utang.totalLoan.toFixed(2),
-        utang.balance.toFixed(2)
-    ]);
-
-    // Add utang list table to PDF
-    doc.text("Utang List", 10, 10);
-    doc.autoTable(utangColumns, utangRows, { startY: 15 });
-
-    // Group payments by month and name
-    var groupedPayments = {};
-    paymentHistory.forEach(payment => {
-        var date = new Date(payment.date);
-        var month = date.toLocaleString('default', { month: 'long' });
-        var year = date.getFullYear();
-        var key = `${month} ${year}`;
-        if (!groupedPayments[key]) {
-            groupedPayments[key] = {};
+    // Group utang by name
+    var utangByPerson = {};
+    utangList.forEach(utang => {
+        if (!utangByPerson[utang.name]) {
+            utangByPerson[utang.name] = [];
         }
-        if (!groupedPayments[key][payment.name]) {
-            groupedPayments[key][payment.name] = [];
-        }
-        groupedPayments[key][payment.name].push(payment);
+        utangByPerson[utang.name].push(utang);
     });
 
-    // Add payments grouped by month and name to PDF
-    Object.keys(groupedPayments).forEach(monthYear => {
-        doc.text(`Payments for ${monthYear}`, 10, doc.lastAutoTable.finalY + 10);
-        var startY = doc.lastAutoTable.finalY + 15;
-        Object.keys(groupedPayments[monthYear]).forEach(name => {
-            var payments = groupedPayments[monthYear][name];
-            var rows = payments.map(payment => [name, formatCurrency(payment.amount), payment.date]);
-            doc.autoTable(["Name", "Amount Paid", "Date Paid"], rows, { startY, margin: { top: 10 } });
-            startY = doc.lastAutoTable.finalY + 10;
+    // Group payments by name
+    var paymentsByPerson = {};
+    paymentHistory.forEach(payment => {
+        if (!paymentsByPerson[payment.name]) {
+            paymentsByPerson[payment.name] = [];
+        }
+        paymentsByPerson[payment.name].push(payment);
+    });
+
+    // Generate PDF for each person
+    Object.keys(utangByPerson).forEach(name => {
+        // Utang info
+        var utangRows = utangByPerson[name].map(utang => [
+            utang.name,
+            utang.loanDate,
+            utang.initialLoan.toFixed(2),
+            utang.interest.toFixed(2),
+            utang.totalLoan.toFixed(2),
+            utang.balance.toFixed(2)
+        ]);
+        doc.setFontSize(18);
+        doc.text(`${name}'s Utang List`, 10, 10);
+        doc.autoTable({
+            startY: 20,
+            head: [["Name", "Loan Date", "Initial Loan", "Interest", "Total Loan", "Balance"]],
+            body: utangRows,
+            theme: 'striped',
+            headStyles: { fillColor: [52, 73, 94] },
+            styles: { fontSize: 10 }
         });
+
+        // Payments
+        if (paymentsByPerson[name]) {
+            var paymentRows = paymentsByPerson[name].map(payment => [
+                name,
+                payment.amount.toFixed(2),
+                payment.date
+            ]);
+            var finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 30;
+            doc.setFontSize(18);
+            doc.text(`${name}'s Payments`, 10, finalY);
+            finalY += 5;
+            doc.autoTable({
+                startY: finalY,
+                head: [["Name", "Amount Paid", "Date Paid"]],
+                body: paymentRows,
+                theme: 'grid',
+                styles: { fontSize: 10 },
+                margin: { top: 10 }
+            });
+        }
+
+        // Add page break for next person
+        doc.addPage();
     });
 
     // Save PDF
-    doc.save("utang_report.pdf");
+    doc.save("utang_reports_combined.pdf");
 }
-    // Tungkol sa iba pang functions sa iyong code
 
-    // Window onload function
-    window.onload = function() {
-        renderUtangList();
-        renderPaymentHistory();
-        updateSummary();
-    }
+// Window onload function
+window.onload = function() {
+    renderUtangList();
+    renderPaymentHistory();
+    updateSummary();
+}
 </script>
 
 </body>
