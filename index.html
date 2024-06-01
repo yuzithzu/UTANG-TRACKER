@@ -550,19 +550,41 @@ function downloadPDF() {
     // Group payments by name and month
     var paymentsByPersonAndMonth = {};
     paymentHistory.forEach(payment => {
-        var key = payment.name + '_' + new Date(payment.date).getMonth(); // Use month as part of the key
+        var key = `${payment.name}_${new Date(payment.date).getMonth()}`;
         if (!paymentsByPersonAndMonth[key]) {
             paymentsByPersonAndMonth[key] = [];
         }
         paymentsByPersonAndMonth[key].push(payment);
     });
 
-    // Generate PDF for each person and month
+    // Summary of all borrowers (excluding those with zero balance)
+    var summaryRows = [];
     Object.keys(utangByPerson).forEach(name => {
-        // Check if the person has a non-zero balance
         var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
         if (totalBalance > 0) {
-            // Utang info
+            var totalLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.totalLoan, 0);
+            summaryRows.push([name, totalLoan.toFixed(2), totalBalance.toFixed(2)]);
+        }
+    });
+
+    if (summaryRows.length > 0) {
+        doc.setFontSize(18);
+        doc.text('Summary of Borrowers', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+        doc.autoTable({
+            startY: 20,
+            head: [["Name", "Total Loan", "Total Balance"]],
+            body: summaryRows,
+            theme: 'striped',
+            headStyles: { fillColor: [52, 73, 94] },
+            styles: { fontSize: 10, halign: 'center' }
+        });
+        doc.addPage();
+    }
+
+    // Generate PDF for each person and month
+    Object.keys(utangByPerson).forEach(name => {
+        var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
+        if (totalBalance > 0) {
             var utangRows = utangByPerson[name].map(utang => [
                 utang.name,
                 utang.loanDate,
@@ -571,48 +593,49 @@ function downloadPDF() {
                 utang.totalLoan.toFixed(2),
                 utang.balance.toFixed(2)
             ]);
+
             doc.setFontSize(18);
-            doc.text(`${name}'s Utang List`, 10, 10);
+            doc.text(`${name}'s Utang List`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
             doc.autoTable({
                 startY: 20,
                 head: [["Name", "Loan Date", "Initial Loan", "Interest", "Total Loan", "Balance"]],
                 body: utangRows,
                 theme: 'striped',
                 headStyles: { fillColor: [52, 73, 94] },
-                styles: { fontSize: 10 }
+                styles: { fontSize: 10, halign: 'center' }
             });
 
-            // Payments
             Object.keys(paymentsByPersonAndMonth).forEach(key => {
                 var [person, month] = key.split('_');
                 if (person === name) {
-                    var monthName = new Date(2024, parseInt(month)).toLocaleString('en-us', { month: 'long' }); // Corrected to parse month as integer
+                    var monthName = new Date(2024, parseInt(month)).toLocaleString('en-us', { month: 'long' });
                     var paymentRows = paymentsByPersonAndMonth[key].map(payment => [
                         name,
                         payment.amount.toFixed(2),
                         payment.date
                     ]);
-                    var finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 30;
+
+                    var finalY = doc.autoTable.previous.finalY + 10;
+                    doc.addPage();
                     doc.setFontSize(18);
-                    doc.text(`${name}'s Payments - ${monthName}`, 10, finalY);
-                    finalY += 5;
+                    doc.text(`${name}'s Payments - ${monthName}`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+
                     doc.autoTable({
-                        startY: finalY,
+                        startY: 20,
                         head: [["Name", "Amount Paid", "Date Paid"]],
                         body: paymentRows,
                         theme: 'grid',
-                        styles: { fontSize: 10 },
-                        margin: { top: 10 }
+                        styles: { fontSize: 10, halign: 'center' }
                     });
                 }
             });
 
-            // Add page break for next person
-            doc.addPage();
+            if (Object.keys(utangByPerson).indexOf(name) !== Object.keys(utangByPerson).length - 1) {
+                doc.addPage();
+            }
         }
     });
 
-    // Add footer with page numbers
     var totalPages = doc.internal.getNumberOfPages();
     for (var i = 1; i <= totalPages; i++) {
         doc.setPage(i);
@@ -620,10 +643,9 @@ function downloadPDF() {
         doc.text('Page ' + i + ' of ' + totalPages, doc.internal.pageSize.getWidth() - 50, doc.internal.pageSize.getHeight() - 10);
     }
 
-    // Save PDF
     doc.save("utang_reports_combined.pdf");
 }
-    
+
 // Window onload function
 window.onload = function() {
     renderUtangList();
