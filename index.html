@@ -567,9 +567,12 @@ function downloadPDF() {
         var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
         if (totalBalance > 0) {
             var totalLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.totalLoan, 0);
-            summaryRows.push([name, formatNumber(totalLoan), formatNumber(totalBalance)]);
+            summaryRows.push({ name, totalLoan, totalBalance });
         }
     });
+
+    // Sort the summary rows by total balance from smallest to largest
+    summaryRows.sort((a, b) => a.totalBalance - b.totalBalance);
 
     if (summaryRows.length > 0) {
         doc.setFontSize(18);
@@ -577,7 +580,7 @@ function downloadPDF() {
         doc.autoTable({
             startY: 20,
             head: [["Name", "Total Loan", "Total Balance"]],
-            body: summaryRows,
+            body: summaryRows.map(row => [row.name, formatNumber(row.totalLoan), formatNumber(row.totalBalance)]),
             theme: 'striped',
             headStyles: { fillColor: [52, 73, 94] },
             styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
@@ -585,58 +588,56 @@ function downloadPDF() {
         doc.addPage();
     }
 
-    // Generate PDF for each person and month
-    Object.keys(utangByPerson).forEach(name => {
-        var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
-        if (totalBalance > 0) {
-            var utangRows = utangByPerson[name].map(utang => [
-                utang.name,
-                utang.loanDate,
-                formatNumber(utang.initialLoan),
-                formatNumber(utang.interest),
-                formatNumber(utang.totalLoan),
-                formatNumber(utang.balance)
-            ]);
+    // Generate PDF for each person in the same order as the summary
+    summaryRows.forEach(summary => {
+        var name = summary.name;
+        var utangRows = utangByPerson[name].map(utang => [
+            utang.name,
+            utang.loanDate,
+            formatNumber(utang.initialLoan),
+            formatNumber(utang.interest),
+            formatNumber(utang.totalLoan),
+            formatNumber(utang.balance)
+        ]);
 
-            doc.setFontSize(18);
-            doc.text(`${name}'s Utang List`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
-            doc.autoTable({
-                startY: 20,
-                head: [["Name", "Loan Date", "Initial Loan", "Interest", "Total Loan", "Balance"]],
-                body: utangRows,
-                theme: 'striped',
-                headStyles: { fillColor: [52, 73, 94] },
-                styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
-            });
+        doc.setFontSize(18);
+        doc.text(`${name}'s Utang List`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+        doc.autoTable({
+            startY: 20,
+            head: [["Name", "Loan Date", "Initial Loan", "Interest", "Total Loan", "Balance"]],
+            body: utangRows,
+            theme: 'striped',
+            headStyles: { fillColor: [52, 73, 94] },
+            styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
+        });
 
-            Object.keys(paymentsByPersonAndMonth).forEach(key => {
-                var [person, month] = key.split('_');
-                if (person === name) {
-                    var monthName = new Date(2024, parseInt(month)).toLocaleString('en-us', { month: 'long' });
-                    var paymentRows = paymentsByPersonAndMonth[key].map(payment => [
-                        name,
-                        formatNumber(payment.amount),
-                        payment.date
-                    ]);
+        Object.keys(paymentsByPersonAndMonth).forEach(key => {
+            var [person, month] = key.split('_');
+            if (person === name) {
+                var monthName = new Date(2024, parseInt(month)).toLocaleString('en-us', { month: 'long' });
+                var paymentRows = paymentsByPersonAndMonth[key].map(payment => [
+                    name,
+                    formatNumber(payment.amount),
+                    payment.date
+                ]);
 
-                    var finalY = doc.autoTable.previous.finalY + 10;
-                    doc.addPage();
-                    doc.setFontSize(18);
-                    doc.text(`${name}'s Payments - ${monthName}`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
-
-                    doc.autoTable({
-                        startY: 20,
-                        head: [["Name", "Amount Paid", "Date Paid"]],
-                        body: paymentRows,
-                        theme: 'grid',
-                        styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
-                    });
-                }
-            });
-
-            if (Object.keys(utangByPerson).indexOf(name) !== Object.keys(utangByPerson).length - 1) {
+                var finalY = doc.autoTable.previous.finalY + 10;
                 doc.addPage();
+                doc.setFontSize(18);
+                doc.text(`${name}'s Payments - ${monthName}`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+
+                doc.autoTable({
+                    startY: 20,
+                    head: [["Name", "Amount Paid", "Date Paid"]],
+                    body: paymentRows,
+                    theme: 'grid',
+                    styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
+                });
             }
+        });
+
+        if (summaryRows.indexOf(summary) !== summaryRows.length - 1) {
+            doc.addPage();
         }
     });
 
