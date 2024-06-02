@@ -563,11 +563,24 @@ function downloadPDF() {
 
     // Summary of all borrowers (excluding those with zero balance)
     var summaryRows = [];
+    var totalInitialLoan = 0;
+    var totalInterest = 0;
+    var grandTotalLoan = 0;
+    var grandTotalBalance = 0;
+
     Object.keys(utangByPerson).forEach(name => {
         var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
         if (totalBalance > 0) {
             var totalLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.totalLoan, 0);
-            summaryRows.push({ name, totalLoan, totalBalance });
+            var initialLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.initialLoan, 0);
+            var interest = utangByPerson[name].reduce((sum, utang) => sum + utang.interest, 0);
+
+            summaryRows.push({ name, initialLoan, interest, totalLoan, totalBalance });
+
+            totalInitialLoan += initialLoan;
+            totalInterest += interest;
+            grandTotalLoan += totalLoan;
+            grandTotalBalance += totalBalance;
         }
     });
 
@@ -579,8 +592,14 @@ function downloadPDF() {
         doc.text('Summary of Borrowers', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
         doc.autoTable({
             startY: 20,
-            head: [["Name", "Total Loan", "Total Balance"]],
-            body: summaryRows.map(row => [row.name, formatNumber(row.totalLoan), formatNumber(row.totalBalance)]),
+            head: [["Name", "Initial Loan", "Interest", "Total Loan", "Total Balance"]],
+            body: summaryRows.map(row => [
+                row.name, 
+                formatNumber(row.initialLoan), 
+                formatNumber(row.interest), 
+                formatNumber(row.totalLoan), 
+                formatNumber(row.totalBalance)
+            ]),
             theme: 'striped',
             headStyles: { fillColor: [52, 73, 94] },
             styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
@@ -639,6 +658,24 @@ function downloadPDF() {
         if (summaryRows.indexOf(summary) !== summaryRows.length - 1) {
             doc.addPage();
         }
+    });
+
+    // Add the final summary page with totals
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.text('Final Summary', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+    doc.autoTable({
+        startY: 20,
+        head: [["Total Initial Loan", "Total Interest", "Grand Total Loan", "Grand Total Balance"]],
+        body: [[
+            formatNumber(totalInitialLoan),
+            formatNumber(totalInterest),
+            formatNumber(grandTotalLoan),
+            formatNumber(grandTotalBalance)
+        ]],
+        theme: 'striped',
+        headStyles: { fillColor: [52, 73, 94] },
+        styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
     });
 
     var totalPages = doc.internal.getNumberOfPages();
