@@ -577,6 +577,7 @@ function downloadPDF() {
     var totalInterest = 0;
     var grandTotalLoan = 0;
     var grandTotalBalance = 0;
+    var grandTotalPaid = 0;
 
     Object.keys(utangByPerson).forEach(name => {
         var totalBalance = utangByPerson[name].reduce((sum, utang) => sum + utang.balance, 0);
@@ -584,13 +585,15 @@ function downloadPDF() {
             var totalLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.totalLoan, 0);
             var initialLoan = utangByPerson[name].reduce((sum, utang) => sum + utang.initialLoan, 0);
             var interest = utangByPerson[name].reduce((sum, utang) => sum + utang.interest, 0);
+            var totalPaid = paymentHistory.filter(payment => payment.name === name).reduce((sum, payment) => sum + payment.amount, 0);
 
-            summaryRows.push({ name, initialLoan, interest, totalLoan, totalBalance });
+            summaryRows.push({ name, initialLoan, interest, totalLoan, totalPaid, totalBalance });
 
             totalInitialLoan += initialLoan;
             totalInterest += interest;
             grandTotalLoan += totalLoan;
             grandTotalBalance += totalBalance;
+            grandTotalPaid += totalPaid;
         }
     });
 
@@ -602,12 +605,13 @@ function downloadPDF() {
         doc.text('Summary of Borrowers', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
         doc.autoTable({
             startY: 20,
-            head: [["Name", "Initial Loan", "Interest", "Total Loan", "Total Balance"]],
+            head: [["Name", "Initial Loan", "Interest", "Total Loan", "Total Paid", "Total Balance"]],
             body: summaryRows.map(row => [
                 row.name, 
                 formatNumber(row.initialLoan), 
                 formatNumber(row.interest), 
                 formatNumber(row.totalLoan), 
+                formatNumber(row.totalPaid),
                 formatNumber(row.totalBalance)
             ]),
             theme: 'striped',
@@ -699,11 +703,12 @@ function downloadPDF() {
     doc.text('Final Summary', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
     doc.autoTable({
         startY: 20,
-        head: [["Total Initial Loan", "Total Interest", "Grand Total Loan", "Grand Total Balance"]],
+        head: [["Total Initial Loan", "Total Interest", "Grand Total Loan", "Grand Total Paid", "Grand Total Balance"]],
         body: [[
             formatNumber(totalInitialLoan),
             formatNumber(totalInterest),
             formatNumber(grandTotalLoan),
+            formatNumber(grandTotalPaid),
             formatNumber(grandTotalBalance)
         ]],
         theme: 'striped',
