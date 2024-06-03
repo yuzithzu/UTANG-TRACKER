@@ -561,6 +561,13 @@ function downloadPDF() {
         paymentsByPersonAndMonth[key].push(payment);
     });
 
+    // Collect payments made on the current date
+    var currentDate = new Date().toISOString().split('T')[0];
+    var todayPayments = paymentHistory.filter(payment => payment.date === currentDate);
+    
+    // Sort payments by name
+    todayPayments.sort((a, b) => a.name.localeCompare(b.name));
+
     // Summary of all borrowers (excluding those with zero balance)
     var summaryRows = [];
     var totalInitialLoan = 0;
@@ -604,7 +611,25 @@ function downloadPDF() {
             headStyles: { fillColor: [52, 73, 94] },
             styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
         });
+    }
+
+    // Add the payments made today to the second page
+    if (todayPayments.length > 0) {
         doc.addPage();
+        doc.setFontSize(18);
+        doc.text('Payments Made Today', doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+        doc.autoTable({
+            startY: 20,
+            head: [["Name", "Amount Paid", "Date Paid"]],
+            body: todayPayments.map(payment => [
+                payment.name,
+                formatNumber(payment.amount),
+                payment.date
+            ]),
+            theme: 'striped',
+            headStyles: { fillColor: [52, 73, 94] },
+            styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
+        });
     }
 
     // Generate PDF for each person in the same order as the summary
@@ -619,6 +644,7 @@ function downloadPDF() {
             formatNumber(utang.balance)
         ]);
 
+        doc.addPage();
         doc.setFontSize(18);
         doc.text(`${name}'s Utang List`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
         doc.autoTable({
@@ -640,7 +666,6 @@ function downloadPDF() {
                     payment.date
                 ]);
 
-                var finalY = doc.autoTable.previous.finalY + 10;
                 doc.addPage();
                 doc.setFontSize(18);
                 doc.text(`${name}'s Payments - ${monthName}`, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
@@ -654,10 +679,6 @@ function downloadPDF() {
                 });
             }
         });
-
-        if (summaryRows.indexOf(summary) !== summaryRows.length - 1) {
-            doc.addPage();
-        }
     });
 
     // Add the final summary page with totals
