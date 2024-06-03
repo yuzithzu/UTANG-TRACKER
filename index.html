@@ -571,6 +571,10 @@ function downloadPDF() {
     // Calculate total payments made today
     var totalPaymentsToday = todayPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
+    // Get the list of borrowers who have not paid today
+    var borrowersWhoPaidToday = new Set(todayPayments.map(payment => payment.name));
+    var borrowersNotPaidToday = Object.keys(utangByPerson).filter(name => !borrowersWhoPaidToday.has(name));
+    
     // Summary of all borrowers (excluding those with zero balance)
     var summaryRows = [];
     var totalInitialLoan = 0;
@@ -646,6 +650,17 @@ function downloadPDF() {
             headStyles: { fillColor: [52, 73, 94] },
             styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
         });
+
+        if (borrowersNotPaidToday.length > 0) {
+            doc.autoTable({
+                startY: doc.autoTable.previous.finalY + 20,
+                head: [["Borrowers Who Have Not Paid Today"]],
+                body: borrowersNotPaidToday.map(name => [name]),
+                theme: 'striped',
+                headStyles: { fillColor: [52, 73, 94] },
+                styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
+            });
+        }
     }
 
     // Generate PDF for each person in the same order as the summary
