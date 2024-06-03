@@ -568,6 +568,9 @@ function downloadPDF() {
     // Sort payments by name
     todayPayments.sort((a, b) => a.name.localeCompare(b.name));
 
+    // Calculate total payments made today
+    var totalPaymentsToday = todayPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
     // Summary of all borrowers (excluding those with zero balance)
     var summaryRows = [];
     var totalInitialLoan = 0;
@@ -626,6 +629,15 @@ function downloadPDF() {
                 formatNumber(payment.amount),
                 payment.date
             ]),
+            theme: 'striped',
+            headStyles: { fillColor: [52, 73, 94] },
+            styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
+        });
+
+        doc.autoTable({
+            startY: doc.autoTable.previous.finalY + 10,
+            head: [["Total Amount Paid Today"]],
+            body: [[formatNumber(totalPaymentsToday)]],
             theme: 'striped',
             headStyles: { fillColor: [52, 73, 94] },
             styles: { fontSize: 10, halign: 'center', cellWidth: 'wrap' }
