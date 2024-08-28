@@ -275,56 +275,70 @@
         return number.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
     }
 
-    function addUtang() {
-        var name = document.getElementById("name").value;
-        var initialLoan = parseFloat(document.getElementById("initialLoan").value);
-        var loanDate = document.getElementById("loanDate").value;
-        if (!name || isNaN(initialLoan) || initialLoan <= 0 || !loanDate) {
-            alert("Please provide valid inputs.");
-            return;
-        }
-        var interest = initialLoan * 0.2;
-        var totalLoan = initialLoan + interest;
-        var newUtang = {
-            name: name,
-            initialLoan: initialLoan,
-            interest: interest,
-            totalLoan: totalLoan,
-            balance: totalLoan,
-            payments: [],
-            loanDate: loanDate
-        };
-        utangList.push(newUtang);
-        saveData();
-        renderUtangList();
-        updateSummary();
-        document.getElementById("name").value = "";
-        document.getElementById("initialLoan").value = "";
-        document.getElementById("loanDate").value = "";
+function addUtang() {
+    var name = document.getElementById("name").value.trim();
+    var initialLoan = parseFloat(document.getElementById("initialLoan").value);
+    var loanDate = document.getElementById("loanDate").value;
+
+    if (!name || isNaN(initialLoan) || initialLoan <= 0 || !loanDate) {
+        alert("Please provide valid inputs.");
+        return;
     }
 
-    function renderUtangList() {
-        var tbody = document.querySelector("#utangList tbody");
-        tbody.innerHTML = "";
-        utangList.forEach((utang, index) => {
-            if (utang.balance > 0) {
-                var rowClass = utang.balance === 0 ? "yellow-row" : "";
-                var row = `<tr class="${rowClass}" onclick="highlightRow(this)">
-                    <td>${utang.name}</td>
-                    <td>${utang.loanDate}</td>
-                    <td>${formatCurrency(utang.initialLoan)}</td>
-                    <td>${formatCurrency(utang.interest)}</td>
-                    <td>${formatCurrency(utang.totalLoan)}</td>
-                    <td><input type='number' class='payment' min='0' step='0.01'></td>
-                    <td><input type='date' class='date'></td>
-                    <td class="balance-cell">${formatCurrency(utang.balance)}</td>
-                    <td><button onclick='submitPayment(${index}, this)'>Submit</button></td>
-                    <td><button onclick='deleteUtang(${index})'>Delete</button></td>
-                </tr>`;
-                tbody.innerHTML += row;
-            }
-        });
+    // Check for duplicates and append a number if needed
+    var nameExists = utangList.filter(utang => utang.name.startsWith(name));
+    if (nameExists.length > 0) {
+        name += " " + (nameExists.length + 1);
     }
+
+    var interest = initialLoan * 0.2;
+    var totalLoan = initialLoan + interest;
+    var newUtang = {
+        name: name,
+        initialLoan: initialLoan,
+        interest: interest,
+        totalLoan: totalLoan,
+        balance: totalLoan,
+        payments: [],
+        loanDate: loanDate
+    };
+
+    utangList.push(newUtang);
+
+    // Sort utangList alphabetically by name
+    utangList.sort((a, b) => a.name.localeCompare(b.name));
+
+    saveData();
+    renderUtangList();
+    updateSummary();
+
+    document.getElementById("name").value = "";
+    document.getElementById("initialLoan").value = "";
+    document.getElementById("loanDate").value = "";
+}
+
+function renderUtangList() {
+    var tbody = document.querySelector("#utangList tbody");
+    tbody.innerHTML = "";
+    utangList.forEach((utang, index) => {
+        if (utang.balance > 0) {
+            var rowClass = utang.balance === 0 ? "yellow-row" : "";
+            var row = `<tr class="${rowClass}" onclick="highlightRow(this)">
+                <td>${utang.name}</td>
+                <td>${utang.loanDate}</td>
+                <td>${formatCurrency(utang.initialLoan)}</td>
+                <td>${formatCurrency(utang.interest)}</td>
+                <td>${formatCurrency(utang.totalLoan)}</td>
+                <td><input type='number' class='payment' min='0' step='0.01'></td>
+                <td><input type='date' class='date'></td>
+                <td class="balance-cell">${formatCurrency(utang.balance)}</td>
+                <td><button onclick='submitPayment(${index}, this)'>Submit</button></td>
+                <td><button onclick='deleteUtang(${index})'>Delete</button></td>
+            </tr>`;
+            tbody.innerHTML += row;
+        }
+    });
+}
 
     function highlightRow(row) {
         var rows = row.parentElement.getElementsByTagName("tr");
